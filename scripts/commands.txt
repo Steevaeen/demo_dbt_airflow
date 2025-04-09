@@ -1,0 +1,70 @@
+Usage
+Running the Pipeline
+1. Start Containers:
+   - Navigate to `C:\Users\Dell\Documents\dbt_workspace\demo_dbt_airflow`
+   - Execute: `docker compose up -d --build`
+2. Access Airflow UI:
+   - URL: `http://localhost:8080`
+   - Login: `admin` / `admin`
+3. Trigger DAG:
+   - Go to “DAGs” > `my_dag`
+   - Unpause and click the play button to run manually.
+4. Verify Data:
+   - Check PostgreSQL: `docker exec -it demo_dbt_airflow-postgres-1 psql -U steev -d mydb -c "\dt"`
+
+Maintenance and Troubleshooting
+Major Issues Faced:
+- Airflow Connection Error:
+  - Error: `could not translate host name "0101@postgres"`
+  - Resolution: Fixed `AIRFLOW__DATABASE__SQL_ALCHEMY_CONN` to `postgresql+psycopg2://steev:Sugukumar@0101@postgres:5432/mydb`.
+- DBT Container Exiting:
+  - Error: Default DBT command exited; `sleep` not recognized.
+  - Resolution: Used `/bin/sh -c "while true; do sleep 3600; done"` to keep container alive.
+
+Steps Taken:
+- Iteratively updated `docker-compose.yml` to resolve connection string and command issues.
+- Validated container status with `docker ps -a` and logs.
+
+Current Status:
+- Airflow and PostgreSQL running; DBT container stabilized.
+- DAG ready to execute but requires DBT model implementation for full functionality.
+
+</DOCUMENT>
+Commands Used
+text
+
+Collapse
+
+Wrap
+
+Copy
+<COMMANDS>
+# Directory Navigation
+cd C:\Users\Dell\Documents\dbt_workspace\demo_dbt_airflow
+
+# Docker Compose Commands
+docker compose down
+docker compose up -d --build
+
+# Container Status and Logs
+docker ps
+docker ps -a
+docker logs demo_dbt_airflow-airflow-1
+docker logs demo_dbt_airflow-dbt-1
+docker logs demo_dbt_airflow-postgres-1
+
+# PostgreSQL Verification
+docker exec -it demo_dbt_airflow-postgres-1 psql -U steev -d mydb -c "\dt"
+docker exec -it demo_dbt_airflow-postgres-1 psql -U steev -d mydb -c "SELECT * FROM table2;"
+docker exec -it demo_dbt_airflow-airflow-1 psql -h postgres -U steev -d mydb
+
+# DBT Manual Test
+docker exec demo_dbt_airflow-dbt-1 dbt run --profiles-dir /usr/app/dbt
+
+# Directory and File Creation
+mkdir scripts
+echo print("R script running!") > scripts\my_script.R
+
+# Network Troubleshooting
+netstat -aon | findstr :8080
+</COMMANDS>

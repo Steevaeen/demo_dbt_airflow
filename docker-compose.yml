@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=steev
+      - POSTGRES_PASSWORD=Sugukumar@0101
+      - POSTGRES_DB=mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U steev -d mydb"]
+
+  airflow:
+    image: apache/airflow:2.8.1
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://steev:Sugukumar%400101@postgres:5432/mydb
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./dbt_project:/usr/app/dbt  # Changed to match dbt container
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "
+      airflow db init &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+      (airflow scheduler & airflow webserver)
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-postgres:1.6.6
+    volumes:
+      - ./dbt_project:/usr/app/dbt
+    entrypoint: ["/bin/bash", "-c", "tail -f /dev/null"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

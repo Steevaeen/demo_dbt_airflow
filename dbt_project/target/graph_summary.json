@@ -1,0 +1,1 @@
+{"_invocation_id": "e37b3227-d7ca-4b17-a66e-e26773a973bd", "linked": {"0": {"name": "model.ecommerce.final_sales", "type": "model"}, "1": {"name": "model.ecommerce.stg_sales", "type": "model", "succ": [0]}}}

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=steev
+      - POSTGRES_PASSWORD=Sugukumar@0101
+      - POSTGRES_DB=mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U steev -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow:
+    image: apache/airflow:2.8.1
+    user: "0"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://steev:Sugukumar%400101@postgres:5432/mydb
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./dbt_project:/opt/airflow/dbt_project
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "
+      apt-get update && apt-get install -y postgresql-client r-base docker.io &&
+      su - airflow -c '/home/airflow/.local/bin/pip install --user apache-airflow-providers-docker' &&
+      su - airflow -c '
+        until PGPASSWORD=\"Sugukumar@0101\" psql -h postgres -U steev -d mydb -c \"select 1\" >/dev/null 2>&1; do
+          echo \"Waiting for PostgreSQL...\";
+          sleep 5;
+        done;
+        airflow db init;
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true;
+        airflow scheduler &
+        airflow webserver
+      '
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-postgres:1.7.8
+    entrypoint: ["/bin/bash", "-c"]  # Critical fix
+    volumes:
+      - ./dbt_project:/usr/app/dbt
+    environment:
+      - DBT_PROFILES_DIR=/usr/app/dbt
+    command: >
+      "pip install --force-reinstall protobuf==5.26.1 && sleep infinity"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
